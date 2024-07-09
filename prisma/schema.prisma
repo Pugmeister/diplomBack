@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int              @id @default(autoincrement())
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  email           String           @unique
+  name            String 
+  phone           String
+  password        String?
+  isAdmin         Boolean          @default(false)
+  profile         Profile?
+  appointments    Appointment[]
+  appointmentLogs AppointmentLog[]
+  reviews         Review[]         @relation("Reviews")
+  payments        Payment[]        @relation("Payments")
+}
+
+model Profile {
+  id          Int     @id @default(autoincrement())
+  user        User    @relation(fields: [userId], references: [id])
+  userId      Int     @unique
+  phoneNumber String?
+  name        String
+}
+
+model Procedure {
+  id            Int              @id @default(autoincrement())
+  name          String
+  price         Float
+  description   String
+  image         String
+  category      Category         @relation(fields: [categoryId], references: [id])
+  categoryId    Int
+  appointments  Appointment[]
+  reviews       Review[]         @relation("Reviews")
+  procedureLogs AppointmentLog[]
+}
+
+model Category {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?
+  procedures  Procedure[]
+}
+
+model Review {
+  id            Int          @id @default(autoincrement())
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  user          User         @relation("Reviews", fields: [userId], references: [id])
+  userId        Int
+  procedure     Procedure    @relation("Reviews", fields: [procedureId], references: [id])
+  procedureId   Int
+  appointment   Appointment? @relation
+  appointmentId Int?
+  rating        Int
+  comment       String?
+}
+
+model Appointment {
+  id              Int              @id @default(autoincrement())
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  date            DateTime
+  user            User             @relation(fields: [userId], references: [id])
+  userId          Int
+  procedure       Procedure        @relation(fields: [procedureId], references: [id])
+  procedureId     Int
+  review          Review?          @relation(fields: [reviewId], references: [id])
+  reviewId        Int?             @unique
+  payment         Payment?         @relation("Payment")
+  paymentId       Int?
+  appointmentLogs AppointmentLog[]
+  employee        Employee         @relation(fields: [employeeId], references: [id])
+  employeeId      Int
+}
+
+model Payment {
+  id              Int              @id @default(autoincrement())
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  user            User             @relation("Payments", fields: [userId], references: [id])
+  userId          Int
+  online          Boolean          @default(false)
+  amount          Float            
+  appointment     Appointment      @relation("Payment", fields: [appointmentId], references: [id])
+  appointmentId   Int              @unique
+  appointmentLogs AppointmentLog[]
+}
+
+model AppointmentLog {
+  id              Int         @id @default(autoincrement())
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  user            User        @relation(fields: [userId], references: [id])
+  userId          Int
+  appointment     Appointment @relation(fields: [appointmentId], references: [id])
+  appointmentId   Int
+  procedure       Procedure   @relation(fields: [procedureId], references: [id])
+  procedureId     Int
+  appointmentDate DateTime
+  payment         Payment?    @relation(fields: [paymentId], references: [id])
+  paymentId       Int?
+  isCompleted     Boolean     @default(false) @map("is_completed")
+}
+
+model Employee {
+  id         Int          @id @unique @default(autoincrement())
+  name       String
+  email      String       @unique
+  phone      String?
+  photo      String?
+  schedules  Schedule[]
+  appointments Appointment[]
+}
+
+model Schedule {
+  id         Int        @id @unique @default(autoincrement())
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  employeeId Int
+  startTime  DateTime
+  isBooked   Boolean    @default(false)
+}
